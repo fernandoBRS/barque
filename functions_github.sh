@@ -64,24 +64,6 @@ function organization_repository_exists() {
     ! [[ -z "$orgRepositoryId" ]]
 }
 
-# function create_repo() {
-#     local repoName=$1
-#     local organization=$2
-
-#     mkdir $repoName
-
-#     pushd $repoName > /dev/null
-    
-#     git init
-#     git add .
-#     git commit -m "initial commit"
-#     hub create -p -o $organization/$repoName
-
-#     popd > /dev/null
-
-#     rm -rf $repoName
-# }
-
 function configure_manifest_repo() {
     local repoName=$1
     local organization=$2
@@ -139,8 +121,8 @@ function configure_app_repo() {
 
     git clone --quiet $sshUrl
 
-    mkdir $repoName/.github/
-    cp -r "$workdir"/workflow-strategies/$workflowStrategy/pipelines/* $repoName/.github/
+    mkdir $repoName/.github/workflows
+    cp -r "$workdir"/workflow-strategies/$workflowStrategy/pipelines/github* $repoName/.github/workflows
 
     # terrible hack becuase cannot use ${{ parameters.manifestRepo }} as there is a bug "An error occurred while loading the YAML build pipeline. An item with the same key has already been added."
     # sed -i -e "s#git://gitops/manifest-live#git://$devopsorg/$manifestlive#g" $appname/.azuredevops/templates/automatic-release-template.yaml
@@ -160,43 +142,3 @@ function configure_app_repo() {
     popd > /dev/null
     popd > /dev/null
 }
-
-
-function configure_app_repo1() {
-  local appname=$1
-  local devopsorg=$2
-  local APP_GIT="$3"
-  local workflow_strategy=$4
-  local manifestlive=$5
-  shift 5
-  local orgAndproj=("$@")
-  
-  workdir=$(pwd)
-  echo $workdir
-  REPO_HOME=$(mktemp -d)
-  pushd $REPO_HOME
-  sshurl=$(az repos show -r $appname "${orgAndproj[@]}" --query 'sshUrl' -o tsv)
-  git clone $sshurl
-
-  #TODO check if dir already has files... don't want to overwrite any customizations. Maybe show diff?
-  mkdir $appname/.azuredevops/ || true
-  cp -r "$workdir"/workflow-strategies/$workflow_strategy/pipelines/* $appname/.azuredevops/
-
-  # terrible hack becuase cannot use ${{ parameters.manifestRepo }} as there is a bug "An error occurred while loading the YAML build pipeline. An item with the same key has already been added."
-  sed -i -e "s#git://gitops/manifest-live#git://$devopsorg/$manifestlive#g" $appname/.azuredevops/templates/automatic-release-template.yaml
-
-  pushd $appname
-  git add .
-  git commit -m "copy files over" || true #ignore failure
-  git remote add upstream $APP_GIT
-  git fetch upstream
-  git rebase upstream/master
-
-  ## will fail on re-run after build policy is in place.  should remove then update then re-apply
-  git push origin master
-  echo "finished"
-  popd
-  popd
-}
-
-

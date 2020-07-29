@@ -50,7 +50,7 @@ if [[ "$1" == '--' ]]; then shift; fi
 : "${ACCESS_TOKEN:?variable empty or not defined.}"
   
 GITHUB_ORG="https://github.com/$ORG"
-MANIFEST_REPO_NAME="$PROJECT_NAME-manifest-live"
+MANIFEST_REPO_NAME="manifest-live"
 
 # If we pass in a local filepath, set APP_REPO to absolute filepath, if we pass in git url, keep git url as is
 if [[ -d $INITIALIZATION_APP_REPO ]]; then 
@@ -76,8 +76,8 @@ echo "Creating GitHub project and repositories..."
 create_project_board $PROJECT_NAME $ORG $ACCESS_TOKEN
 
 # create infra repositories
-create_repository "$PROJECT_NAME-$INFRA_TERRAFORM" $ORG $ACCESS_TOKEN
-create_repository "$PROJECT_NAME-$INFRA_LIVE" $ORG $ACCESS_TOKEN
+create_repository $INFRA_TERRAFORM $ORG $ACCESS_TOKEN
+create_repository $INFRA_LIVE $ORG $ACCESS_TOKEN
 
 # create gitops repos
 create_repository $MANIFEST_REPO_NAME $ORG $ACCESS_TOKEN 
@@ -87,13 +87,3 @@ create_repository $REPO_APP_NAME $ORG $ACCESS_TOKEN
 printf "\nConfiguring repositories...\n"
 configure_manifest_repo $MANIFEST_REPO_NAME $ORG $WORKFLOW_STRATEGY $ACCESS_TOKEN
 configure_app_repo $REPO_APP_NAME $ORG $INITIALIZATION_APP_REPO $WORKFLOW_STRATEGY $MANIFEST_REPO_NAME $ACCESS_TOKEN
-
-# # using workflow-specific setup strategy
-
-# if [[ "$CUSTOM_SETUP_FILE" = default ]]; then 
-#   source ./workflow-strategies/$WORKFLOW_STRATEGY/pipelines/scripts/setup_pipelines.sh
-# else 
-#   source $CUSTOM_SETUP_FILE
-# fi
-
-# set_build_agent_permission $ORG $DEVOPS_PROJECT $MANIFEST_LIVE "${orgAndproj[@]}"
